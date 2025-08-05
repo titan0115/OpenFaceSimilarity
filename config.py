@@ -15,6 +15,7 @@ class ModelConfig:
 class DataConfig:
     """Конфигурация данных"""
     data_dir: str = "data/synthetic_faces"
+    use_synthetic_data: bool = True  # True для синтезированных данных, False для реальных
     num_identities: int = 1000
     samples_per_identity: int = 50
     val_split: float = 0.1
