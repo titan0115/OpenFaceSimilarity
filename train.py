@@ -13,7 +13,7 @@ from datetime import datetime
 
 from models.mobilefacenet import MobileFaceNet
 from models.losses import ArcFace, CosFace, FocalLoss
-from utils.dataset_generator import create_dataloader
+from utils.simple_dataset import create_dataloader
 from config import Config as ProjectConfig
 
 
@@ -310,18 +310,17 @@ class FaceRecognitionTrainer:
 
 def main():
     parser = argparse.ArgumentParser(description='Обучение модели распознавания лиц')
-    parser.add_argument('--data_dir', type=str, default='data/synthetic_faces', 
-                       help='Путь к директории с данными')
-    parser.add_argument('--batch_size', type=int, default=256, help='Размер батча')
-    parser.add_argument('--epochs', type=int, default=100, help='Количество эпох')
+    parser.add_argument('--data_dir', type=str, default='data/pre', 
+                       help='Путь к директории с предобработанными данными')
+    parser.add_argument('--batch_size', type=int, default=512, help='Размер батча')
+    parser.add_argument('--epochs', type=int, default=50, help='Количество эпох')
     parser.add_argument('--lr', type=float, default=1e-3, help='Скорость обучения')
-    parser.add_argument('--num_identities', type=int, default=1000, help='Количество личностей')
-    parser.add_argument('--embedding_size', type=int, default=128, help='Размер эмбеддинга')
+    parser.add_argument('--num_identities', type=int, default=10000, help='Максимальное количество изображений')
+    parser.add_argument('--embedding_size', type=int, default=512, help='Размер эмбеддинга')
     parser.add_argument('--loss_type', type=str, default='arcface', 
                        choices=['arcface', 'cosface'], help='Тип loss функции')
     parser.add_argument('--use_amp', action='store_true', help='Использовать Automatic Mixed Precision')
-    parser.add_argument('--amp_opt_level', type=str, default='O1', 
-                       choices=['O0', 'O1', 'O2', 'O3'], help='Уровень оптимизации AMP')
+    parser.add_argument('--val_split', type=float, default=0.1, help='Доля данных для валидации')
     
     args = parser.parse_args()
     
@@ -333,42 +332,49 @@ def main():
     config.training.batch_size = args.batch_size
     config.training.epochs = args.epochs
     config.training.learning_rate = args.lr
-    config.data.num_identities = args.num_identities
     config.model.embedding_size = args.embedding_size
     config.training.loss_type = args.loss_type
     config.training.use_amp = args.use_amp
-    config.training.amp_opt_level = args.amp_opt_level
     
     # Создание необходимых директорий
     config.create_directories()
     
-    # Создание датасетов
-    print("Создание датасетов...")
+    # Создание датасетов из предобработанных данных
+    print("Создание датасетов из предобработанных данных...")
     
     # Определение параметров датасета
     data_dir = config.data.data_dir
     batch_size = config.training.batch_size
-    num_identities = config.data.num_identities
-    samples_per_identity = config.data.samples_per_identity
+    max_identities = args.num_identities
+    input_size = config.model.input_size
     num_workers = config.data.num_workers
+    val_split = args.val_split
     
-    train_dataloader = create_dataloader(
+    # Автоматическое определение количества изображений
+    import glob
+    image_files = glob.glob(os.path.join(data_dir, "*.png")) + \
+                 glob.glob(os.path.join(data_dir, "*.jpg")) + \
+                 glob.glob(os.path.join(data_dir, "*.jpeg"))
+    
+    if len(image_files) == 0:
+        print(f"❌ В папке {data_dir} нет изображений!")
+        print(f"Поместите предобработанные изображения в папку {data_dir}")
+        return
+    
+    actual_num_identities = min(len(image_files), max_identities) if max_identities else len(image_files)
+    config.data.num_identities = actual_num_identities
+    print(f"Найдено {len(image_files)} изображений, используем {actual_num_identities}")
+    
+    # Создание train и val датасетов
+    train_dataloader, val_dataloader = create_dataloader(
         data_dir=data_dir,
         batch_size=batch_size,
-        num_identities=num_identities,
-        samples_per_identity=samples_per_identity,
+        input_size=input_size,
+        augment=True,
+        max_images=actual_num_identities,
         num_workers=num_workers,
-        shuffle=True
-    )
-    
-    # Создание валидационного датасета (подмножество обучающего)
-    val_dataloader = create_dataloader(
-        data_dir=data_dir,
-        batch_size=batch_size,
-        num_identities=min(100, num_identities),  # Меньше личностей для валидации
-        samples_per_identity=10,
-        num_workers=num_workers,
-        shuffle=False
+        shuffle=True,
+        val_split=val_split
     )
     
     # Создание тренера и запуск обучения

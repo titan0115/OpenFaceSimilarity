@@ -14,10 +14,8 @@ class ModelConfig:
 @dataclass
 class DataConfig:
     """Конфигурация данных"""
-    data_dir: str = "data/synthetic_faces"
-    use_synthetic_data: bool = True  # True для синтезированных данных, False для реальных
-    num_identities: int = 1000
-    samples_per_identity: int = 50
+    data_dir: str = "data/pre"  # Директория с предобработанными данными
+    num_identities: int = 10000  # Максимальное количество изображений для обучения
     val_split: float = 0.1
     num_workers: int = 4
 
@@ -25,8 +23,8 @@ class DataConfig:
 @dataclass
 class TrainingConfig:
     """Конфигурация обучения"""
-    batch_size: int = 256
-    epochs: int = 100
+    batch_size: int = 512
+    epochs: int = 50
     learning_rate: float = 1e-3
     weight_decay: float = 5e-4
     loss_type: str = 'arcface'  # 'arcface' или 'cosface'

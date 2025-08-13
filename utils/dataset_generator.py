@@ -274,14 +274,27 @@ class SyntheticFaceDataset(Dataset):
 
 
 def create_dataloader(data_dir, batch_size=32, num_identities=1000, 
-                     samples_per_identity=50, num_workers=4, shuffle=True):
+                     samples_per_identity=50, num_workers=4, shuffle=True, use_real_data=False):
     """Создание DataLoader для обучения"""
-    dataset = SyntheticFaceDataset(
-        data_dir=data_dir,
-        num_identities=num_identities,
-        samples_per_identity=samples_per_identity,
-        augment=True
-    )
+    
+    if use_real_data:
+        # Используем реальные данные
+        from .real_dataset import RealFaceDataset
+        
+        dataset = RealFaceDataset(
+            data_dir=data_dir,
+            input_size=112,
+            augment=True,
+            max_identities=num_identities
+        )
+    else:
+        # Используем синтетические данные
+        dataset = SyntheticFaceDataset(
+            data_dir=data_dir,
+            num_identities=num_identities,
+            samples_per_identity=samples_per_identity,
+            augment=True
+        )
     
     dataloader = DataLoader(
         dataset,
