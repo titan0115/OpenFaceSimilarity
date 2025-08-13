@@ -3,3 +3,4 @@ python/
 venv/
 *.pyc
 runs/
+*.pth

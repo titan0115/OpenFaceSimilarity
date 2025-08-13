@@ -125,6 +125,7 @@ def demo_training_simulation():
     embedding_size = 128
     num_classes = 10
     batch_size = 4
+    use_amp = torch.cuda.is_available()  # Включаем AMP только на GPU
     
     # Модель и loss
     model = MobileFaceNet(embedding_size=embedding_size)
@@ -133,6 +134,15 @@ def demo_training_simulation():
         {'params': model.parameters()},
         {'params': loss_fn.parameters()}
     ], lr=1e-3)
+    
+    # Инициализация AMP
+    if use_amp:
+        from torch.cuda.amp import autocast, GradScaler
+        scaler = GradScaler()
+        print(f"✅ AMP включен")
+    else:
+        scaler = None
+        print(f"⚠️ AMP отключен (недоступен на CPU)")
     
     print(f"Модель: MobileFaceNet ({count_parameters(model):,} параметров)")
     print(f"Loss: ArcFace")
@@ -150,14 +160,26 @@ def demo_training_simulation():
         
         optimizer.zero_grad()
         
-        # Прямой проход
-        embeddings = model(images)
-        logits = loss_fn(embeddings, labels)
-        loss = torch.nn.functional.cross_entropy(logits, labels)
-        
-        # Обратный проход
-        loss.backward()
-        optimizer.step()
+        if use_amp:
+            # Прямой проход с AMP
+            with autocast():
+                embeddings = model(images)
+                logits = loss_fn(embeddings, labels)
+                loss = torch.nn.functional.cross_entropy(logits, labels)
+            
+            # Обратный проход с AMP
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            # Обычный прямой проход
+            embeddings = model(images)
+            logits = loss_fn(embeddings, labels)
+            loss = torch.nn.functional.cross_entropy(logits, labels)
+            
+            # Обратный проход
+            loss.backward()
+            optimizer.step()
         
         # Вычисление точности
         predictions = torch.argmax(logits, dim=1)
