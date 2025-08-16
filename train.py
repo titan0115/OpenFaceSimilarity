@@ -10,7 +10,7 @@ from tqdm import tqdm
 import time
 from datetime import datetime
 
-from models.mobilefacenet import MobileFaceNet
+from models.model import MobileFaceNet
 from models.losses import ArcFace, CosFace, FocalLoss
 from utils.simple_dataset import create_dataloader
 from config import Config as ProjectConfig

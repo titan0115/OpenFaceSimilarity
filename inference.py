@@ -7,7 +7,7 @@ from PIL import Image
 import argparse
 from torchvision import transforms
 
-from models.mobilefacenet import MobileFaceNet
+from models.model import MobileFaceNet
 
 
 class FaceComparator:
