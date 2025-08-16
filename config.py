@@ -6,7 +6,7 @@ from typing import Optional
 @dataclass
 class ModelConfig:
     """Конфигурация модели"""
-    embedding_size: int = 128
+    embedding_size: int = 512  # Исправлено с 128 на 512
     input_size: int = 112
     model_type: str = 'mobilefacenet'
 
@@ -16,6 +16,7 @@ class DataConfig:
     """Конфигурация данных"""
     data_dir: str = "data/pre"  # Директория с предобработанными данными
     num_identities: int = 10000  # Максимальное количество изображений для обучения
+    samples_per_identity: int = 50  # Количество сэмплов на идентичность
     val_split: float = 0.1
     num_workers: int = 4
 
@@ -35,8 +36,6 @@ class TrainingConfig:
     early_stopping_patience: int = 20
     # AMP параметры
     use_amp: bool = True  # Использовать Automatic Mixed Precision
-    amp_opt_level: str = "O1"  # Уровень оптимизации AMP (O0, O1, O2, O3)
-    amp_loss_scale: Optional[float] = None  # Масштабирование loss для AMP (None для автоматического)
 
 
 @dataclass
@@ -133,7 +132,7 @@ def get_fast_config() -> Config:
     config = Config()
     config.training.epochs = 10
     config.training.batch_size = 32
-    config.training.use_amp = True  # Включаем AMP для ускорения
+    config.training.use_amp = True
     config.data.num_identities = 100
     config.data.samples_per_identity = 20
     return config
@@ -157,7 +156,7 @@ def get_production_config() -> Config:
     config.training.epochs = 150
     config.training.batch_size = 128
     config.training.learning_rate = 1e-3
-    config.training.use_amp = True  # Включаем AMP для продакшна
+    config.training.use_amp = True
     config.data.num_identities = 5000
     config.data.samples_per_identity = 50
     config.logging.verbose = False

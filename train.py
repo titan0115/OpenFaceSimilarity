@@ -14,7 +14,7 @@ from datetime import datetime
 from models.mobilefacenet import MobileFaceNet
 from models.losses import ArcFace, CosFace, FocalLoss
 from utils.simple_dataset import create_dataloader
-from config import Config as ProjectConfig
+from config import Config as ProjectConfig, get_fast_config, get_high_accuracy_config, get_production_config
 
 
 class FaceRecognitionTrainer:
@@ -310,31 +310,29 @@ class FaceRecognitionTrainer:
 
 def main():
     parser = argparse.ArgumentParser(description='Обучение модели распознавания лиц')
-    parser.add_argument('--data_dir', type=str, default='data/pre', 
-                       help='Путь к директории с предобработанными данными')
-    parser.add_argument('--batch_size', type=int, default=512, help='Размер батча')
-    parser.add_argument('--epochs', type=int, default=50, help='Количество эпох')
-    parser.add_argument('--lr', type=float, default=1e-3, help='Скорость обучения')
-    parser.add_argument('--num_identities', type=int, default=10000, help='Максимальное количество изображений')
-    parser.add_argument('--embedding_size', type=int, default=512, help='Размер эмбеддинга')
-    parser.add_argument('--loss_type', type=str, default='arcface', 
-                       choices=['arcface', 'cosface'], help='Тип loss функции')
-    parser.add_argument('--use_amp', action='store_true', help='Использовать Automatic Mixed Precision')
-    parser.add_argument('--val_split', type=float, default=0.1, help='Доля данных для валидации')
+    parser.add_argument('--config', type=str, default=None, 
+                       help='Путь к файлу конфигурации JSON')
+    parser.add_argument('--preset', type=str, default=None,
+                       choices=['fast', 'high_accuracy', 'production'],
+                       help='Предустановленная конфигурация')
     
     args = parser.parse_args()
     
-    # Используем конфигурацию из config.py
-    config = ProjectConfig()
-    
-    # Обновляем параметры из аргументов командной строки
-    config.data.data_dir = args.data_dir
-    config.training.batch_size = args.batch_size
-    config.training.epochs = args.epochs
-    config.training.learning_rate = args.lr
-    config.model.embedding_size = args.embedding_size
-    config.training.loss_type = args.loss_type
-    config.training.use_amp = args.use_amp
+    # Загрузка конфигурации
+    if args.config:
+        config = ProjectConfig.load_config(args.config)
+        print(f"Загружена конфигурация из файла: {args.config}")
+    elif args.preset:
+        if args.preset == 'fast':
+            config = get_fast_config()
+        elif args.preset == 'high_accuracy':
+            config = get_high_accuracy_config()
+        elif args.preset == 'production':
+            config = get_production_config()
+        print(f"Используется предустановленная конфигурация: {args.preset}")
+    else:
+        config = ProjectConfig()
+        print("Используется конфигурация по умолчанию")
     
     # Создание необходимых директорий
     config.create_directories()
@@ -342,40 +340,35 @@ def main():
     # Создание датасетов из предобработанных данных
     print("Создание датасетов из предобработанных данных...")
     
-    # Определение параметров датасета
-    data_dir = config.data.data_dir
-    batch_size = config.training.batch_size
-    max_identities = args.num_identities
-    input_size = config.model.input_size
-    num_workers = config.data.num_workers
-    val_split = args.val_split
-    
     # Автоматическое определение количества изображений
     import glob
-    image_files = glob.glob(os.path.join(data_dir, "*.png")) + \
-                 glob.glob(os.path.join(data_dir, "*.jpg")) + \
-                 glob.glob(os.path.join(data_dir, "*.jpeg"))
+    image_files = glob.glob(os.path.join(config.data.data_dir, "*.png")) + \
+                 glob.glob(os.path.join(config.data.data_dir, "*.jpg")) + \
+                 glob.glob(os.path.join(config.data.data_dir, "*.jpeg"))
     
     if len(image_files) == 0:
-        print(f"❌ В папке {data_dir} нет изображений!")
-        print(f"Поместите предобработанные изображения в папку {data_dir}")
+        print(f"❌ В папке {config.data.data_dir} нет изображений!")
+        print(f"Поместите предобработанные изображения в папку {config.data.data_dir}")
         return
     
-    actual_num_identities = min(len(image_files), max_identities) if max_identities else len(image_files)
+    actual_num_identities = min(len(image_files), config.data.num_identities)
     config.data.num_identities = actual_num_identities
     print(f"Найдено {len(image_files)} изображений, используем {actual_num_identities}")
     
     # Создание train и val датасетов
     train_dataloader, val_dataloader = create_dataloader(
-        data_dir=data_dir,
-        batch_size=batch_size,
-        input_size=input_size,
+        data_dir=config.data.data_dir,
+        batch_size=config.training.batch_size,
+        input_size=config.model.input_size,
         augment=True,
         max_images=actual_num_identities,
-        num_workers=num_workers,
+        num_workers=config.data.num_workers,
         shuffle=True,
-        val_split=val_split
+        val_split=config.data.val_split
     )
+    
+    # Сохранение конфигурации
+    config.save_config(os.path.join(config.training.checkpoint_dir, 'config.json'))
     
     # Создание тренера и запуск обучения
     trainer = FaceRecognitionTrainer(config)
