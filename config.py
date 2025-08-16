@@ -34,6 +34,7 @@ class TrainingConfig:
     checkpoint_dir: str = "checkpoints"
     save_frequency: int = 10
     early_stopping_patience: int = 20
+    validation_frequency: int = 1  # Частота валидации (каждые N эпох)
     # AMP параметры
     use_amp: bool = True  # Использовать Automatic Mixed Precision
 
@@ -77,42 +78,7 @@ class Config:
         self.augmentation = AugmentationConfig()
         self.logging = LoggingConfig()
     
-    def update_from_dict(self, config_dict: dict):
-        """Обновление конфигурации из словаря"""
-        for section_name, section_config in config_dict.items():
-            if hasattr(self, section_name):
-                section = getattr(self, section_name)
-                for key, value in section_config.items():
-                    if hasattr(section, key):
-                        setattr(section, key, value)
-    
-    def to_dict(self) -> dict:
-        """Преобразование конфигурации в словарь"""
-        return {
-            'model': self.model.__dict__,
-            'data': self.data.__dict__,
-            'training': self.training.__dict__,
-            'inference': self.inference.__dict__,
-            'augmentation': self.augmentation.__dict__,
-            'logging': self.logging.__dict__
-        }
-    
-    def save_config(self, filepath: str):
-        """Сохранение конфигурации в файл"""
-        import json
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
-    
-    @classmethod
-    def load_config(cls, filepath: str) -> 'Config':
-        """Загрузка конфигурации из файла"""
-        import json
-        config = cls()
-        with open(filepath, 'r', encoding='utf-8') as f:
-            config_dict = json.load(f)
-        config.update_from_dict(config_dict)
-        return config
+
     
     def create_directories(self):
         """Создание необходимых директорий"""
@@ -126,38 +92,4 @@ class Config:
                 os.makedirs(directory, exist_ok=True)
 
 
-# Предустановленные конфигурации
-def get_fast_config() -> Config:
-    """Быстрая конфигурация для тестирования"""
-    config = Config()
-    config.training.epochs = 10
-    config.training.batch_size = 32
-    config.training.use_amp = True
-    config.data.num_identities = 100
-    config.data.samples_per_identity = 20
-    return config
-
-
-def get_high_accuracy_config() -> Config:
-    """Конфигурация для высокой точности"""
-    config = Config()
-    config.training.epochs = 200
-    config.training.learning_rate = 5e-4
-    config.training.batch_size = 32
-    config.model.embedding_size = 256
-    config.data.num_identities = 2000
-    config.data.samples_per_identity = 100
-    return config
-
-
-def get_production_config() -> Config:
-    """Продакшн конфигурация"""
-    config = Config()
-    config.training.epochs = 150
-    config.training.batch_size = 128
-    config.training.learning_rate = 1e-3
-    config.training.use_amp = True
-    config.data.num_identities = 5000
-    config.data.samples_per_identity = 50
-    config.logging.verbose = False
-    return config 
+ 
