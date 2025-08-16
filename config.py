@@ -15,7 +15,7 @@ class ModelConfig:
 class DataConfig:
     """Конфигурация данных"""
     data_dir: str = "data/pre"  # Директория с предобработанными данными
-    num_identities: int = 10000  # Максимальное количество изображений для обучения
+    num_identities: int = 100000  # Максимальное количество изображений для обучения
     samples_per_identity: int = 50  # Количество сэмплов на идентичность
     val_split: float = 0.1
     num_workers: int = 4
@@ -34,7 +34,7 @@ class TrainingConfig:
     checkpoint_dir: str = "checkpoints"
     save_frequency: int = 10
     early_stopping_patience: int = 20
-    validation_frequency: int = 1  # Частота валидации (каждые N эпох)
+    validation_frequency: int = 10  # Частота валидации (каждые N эпох)
     # AMP параметры
     use_amp: bool = True  # Использовать Automatic Mixed Precision
 
