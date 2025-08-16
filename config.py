@@ -29,9 +29,10 @@ class TrainingConfig:
     epochs: int = 50  # Количество полных проходов по всему датасету
     learning_rate: float = 1e-3  # Скорость обучения (шаг градиентного спуска)
     weight_decay: float = 5e-4  # Регуляризация весов (предотвращает переобучение)
-    loss_type: str = 'arcface'  # Тип функции потерь ('arcface' или 'cosface')
-    margin: float = 0.5  # Отступ для ArcFace/CosFace (увеличивает расстояние между классами)
+    loss_type: str = 'curricularface'  # Тип функции потерь ('arcface', 'cosface' или 'curricularface')
+    margin: float = 0.5  # Отступ для ArcFace/CosFace/CurricularFace (увеличивает расстояние между классами)
     scale: float = 64.0  # Масштабирующий коэффициент для функции потерь
+    alpha: float = 0.01  # Коэффициент адаптации для CurricularFace
     checkpoint_dir: str = "checkpoints"  # Папка для сохранения промежуточных результатов
     save_frequency: int = 10  # Частота сохранения чекпоинтов (каждые N эпох)
     early_stopping_patience: int = 20  # Количество эпох без улучшения для ранней остановки
