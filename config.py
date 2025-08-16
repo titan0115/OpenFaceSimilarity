@@ -16,7 +16,7 @@ class DataConfig:
     """Конфигурация данных"""
     data_dir: str = "data/extracted_images"  # Директория с предобработанными данными
     num_identities: int = 1000000  # Максимальное количество изображений для обучения
-    samples_per_identity: int = 50  # Количество сэмплов на идентичность
+
     val_split: float = 0.1
     num_workers: int = 4
 

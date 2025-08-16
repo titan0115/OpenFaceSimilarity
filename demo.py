@@ -9,7 +9,7 @@ import torch
 import argparse
 from models.mobilefacenet import MobileFaceNet, count_parameters
 from models.losses import ArcFace, CosFace
-from utils.dataset_generator import SyntheticFaceDataset, create_dataloader
+from utils.dataset_generator import create_dataloader
 from utils.metrics import compute_verification_metrics, plot_verification_metrics, print_metrics_summary
 from inference import FaceComparator
 
@@ -73,46 +73,6 @@ def demo_loss_functions():
     
     print("✅ Loss функции работают корректно!")
 
-
-def demo_dataset_generation():
-    """Демонстрация генерации датасета"""
-    print("\n" + "=" * 60)
-    print("ДЕМОНСТРАЦИЯ ГЕНЕРАЦИИ ДАТАСЕТА")
-    print("=" * 60)
-    
-    data_dir = "data/demo_faces"
-    
-    print("Создание небольшого демо-датасета...")
-    dataset = SyntheticFaceDataset(
-        data_dir=data_dir,
-        num_identities=5,
-        samples_per_identity=3,
-        input_size=112,
-        augment=True
-    )
-    
-    print(f"✅ Датасет создан: {len(dataset)} изображений")
-    print(f"   Директория: {data_dir}")
-    print(f"   Личности: 5")
-    print(f"   Образцов на личность: 3")
-    
-    # Тест DataLoader
-    print("\nТестирование DataLoader:")
-    dataloader = create_dataloader(
-        data_dir=data_dir,
-        batch_size=4,
-        num_identities=5,
-        samples_per_identity=3,
-        num_workers=0,  # Для демо без многопроцессности
-        shuffle=True
-    )
-    
-    for batch_idx, (images, labels) in enumerate(dataloader):
-        print(f"   Batch {batch_idx}: images {images.shape}, labels {labels}")
-        if batch_idx >= 1:
-            break
-    
-    print("✅ DataLoader работает корректно!")
 
 
 def demo_training_simulation():
@@ -289,7 +249,7 @@ def demo_metrics():
 def main():
     parser = argparse.ArgumentParser(description='Демонстрация системы распознавания лиц')
     parser.add_argument('--demo', type=str, default='all',
-                       choices=['all', 'model', 'loss', 'dataset', 'training', 'inference', 'metrics'],
+                       choices=['all', 'model', 'loss', 'training', 'inference', 'metrics'],
                        help='Какую демонстрацию запустить')
     
     args = parser.parse_args()
@@ -304,8 +264,7 @@ def main():
     if args.demo in ['all', 'loss']:
         demo_loss_functions()
     
-    if args.demo in ['all', 'dataset']:
-        demo_dataset_generation()
+
     
     if args.demo in ['all', 'training']:
         demo_training_simulation()
@@ -322,7 +281,7 @@ def main():
     print("Основные компоненты проекта:")
     print("✅ MobileFaceNet - легковесная архитектура")
     print("✅ ArcFace/CosFace - современные loss функции")
-    print("✅ Автоматическая генерация датасета с аугментациями")
+    print("✅ Работа с реальными данными")
     print("✅ Полный pipeline обучения")
     print("✅ Инференс и сравнение лиц")
     print("✅ Метрики оценки качества")
