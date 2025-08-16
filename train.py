@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 from models.model import MobileFaceNet
-from models.losses import ArcFace, CosFace, CurricularFace, FocalLoss
+from models.losses import CosFace, CurricularFace, FocalLoss
 from utils.simple_dataset import create_dataloader
 from config import Config as ProjectConfig
 
@@ -47,14 +47,7 @@ class FaceRecognitionTrainer:
         scale = config.training.scale
         
         # Создание loss функции
-        if loss_type == 'arcface':
-            self.loss_fn = ArcFace(
-                embedding_size=embedding_size,
-                num_classes=num_identities,
-                margin=margin,
-                scale=scale
-            ).to(self.device)
-        elif loss_type == 'cosface':
+        if loss_type == 'cosface':
             self.loss_fn = CosFace(
                 embedding_size=embedding_size,
                 num_classes=num_identities,
