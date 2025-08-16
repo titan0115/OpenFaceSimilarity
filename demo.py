@@ -9,7 +9,7 @@ import torch
 import argparse
 from models.mobilefacenet import MobileFaceNet, count_parameters
 from models.losses import ArcFace, CosFace
-from utils.dataset_generator import create_dataloader
+from utils.dataset import create_real_dataloader
 from utils.metrics import compute_verification_metrics, plot_verification_metrics, print_metrics_summary
 from inference import FaceComparator
 
