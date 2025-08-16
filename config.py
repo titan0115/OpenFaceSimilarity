@@ -48,15 +48,7 @@ class InferenceConfig:
     device: Optional[str] = None  # Устройство для инференса (None = автоопределение)
 
 
-@dataclass
-class AugmentationConfig:
-    """Конфигурация аугментации - настройки для увеличения датасета"""
-    horizontal_flip: bool = True  # Горизонтальное отражение изображений
-    rotation_range: float = 10.0  # Диапазон поворота в градусах
-    brightness_range: float = 0.2  # Диапазон изменения яркости
-    contrast_range: float = 0.2  # Диапазон изменения контраста
-    saturation_range: float = 0.2  # Диапазон изменения насыщенности
-    hue_range: float = 0.1  # Диапазон изменения оттенка
+
 
 
 @dataclass
@@ -77,7 +69,6 @@ class Config:
         self.data = DataConfig()  # Настройки данных
         self.training = TrainingConfig()  # Настройки обучения
         self.inference = InferenceConfig()  # Настройки инференса
-        self.augmentation = AugmentationConfig()  # Настройки аугментации
         self.logging = LoggingConfig()  # Настройки логирования
     
 
