@@ -48,8 +48,8 @@ def detect_and_crop_face(image, face_cascade, output_size=112):
     largest_face = max(faces, key=lambda x: x[2] * x[3])
     x, y, w, h = largest_face
     
-    # Добавляем отступы для лучшего кропа
-    padding = int(max(w, h) * 0.3)
+    # Минимальные отступы для точного кропа лица
+    padding = int(max(w, h) * 0.1)  # Только 10% отступ
     x1 = max(0, x - padding)
     y1 = max(0, y - padding)
     x2 = min(image.shape[1], x + w + padding)
@@ -157,7 +157,7 @@ def preprocess_dataset(input_dir, output_dir, output_size=112, max_images=None):
         if processed_image is not None:
             # Проверяем, было ли найдено лицо
             temp_gray = cv2.cvtColor(processed_image, cv2.COLOR_BGR2GRAY)
-            temp_faces = face_cascade.detectMultiScale(temp_gray, scaleFactor=1.1, minNeighbors=3)
+            temp_faces = face_cascade.detectMultiScale(temp_gray, scaleFactor=1.1, minNeighbors=5)
             
             if len(temp_faces) > 0:
                 faces_detected += 1
