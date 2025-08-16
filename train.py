@@ -7,14 +7,13 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.cuda.amp import autocast, GradScaler
 import numpy as np
 from tqdm import tqdm
-import argparse
 import time
 from datetime import datetime
 
 from models.mobilefacenet import MobileFaceNet
 from models.losses import ArcFace, CosFace, FocalLoss
 from utils.simple_dataset import create_dataloader
-from config import Config as ProjectConfig, get_fast_config, get_high_accuracy_config, get_production_config
+from config import Config as ProjectConfig
 
 
 class FaceRecognitionTrainer:
@@ -255,8 +254,10 @@ class FaceRecognitionTrainer:
         # Получение параметров из конфигурации
         epochs = self.config.training.epochs
         save_frequency = self.config.training.save_frequency
+        validation_frequency = self.config.training.validation_frequency
         
         print(f"Начало обучения на {epochs} эпох...")
+        print(f"Валидация будет проводиться каждые {validation_frequency} эпох")
         print(f"Количество параметров модели: {sum(p.numel() for p in self.model.parameters() if p.requires_grad):,}")
         
         for epoch in range(epochs):
@@ -265,8 +266,11 @@ class FaceRecognitionTrainer:
             # Обучение
             train_loss, train_acc = self.train_epoch(train_dataloader, epoch)
             
-            # Валидация
-            if val_dataloader is not None:
+            # Валидация (только в определенные эпохи)
+            should_validate = (val_dataloader is not None and 
+                             (epoch + 1) % validation_frequency == 0)
+            
+            if should_validate:
                 val_loss, val_acc = self.validate(val_dataloader)
                 
                 # Логирование валидации
@@ -293,10 +297,13 @@ class FaceRecognitionTrainer:
                 
                 print(f"Epoch {epoch+1}/{epochs}")
                 print(f"Train - Loss: {train_loss:.4f}, Acc: {train_acc:.4f}")
+                print(f"Валидация пропущена (следующая через {validation_frequency - ((epoch + 1) % validation_frequency)} эпох)")
                 print(f"Время эпохи: {time.time() - start_time:.2f}s")
                 print("-" * 50)
                 
-                self.save_checkpoint(epoch, train_acc, is_best)
+                # Сохраняем чекпоинт только если это лучший результат или по частоте сохранения
+                if is_best or (epoch + 1) % save_frequency == 0:
+                    self.save_checkpoint(epoch, train_acc, is_best)
             
             # Обновление планировщика
             self.scheduler.step()
@@ -309,30 +316,9 @@ class FaceRecognitionTrainer:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Обучение модели распознавания лиц')
-    parser.add_argument('--config', type=str, default=None, 
-                       help='Путь к файлу конфигурации JSON')
-    parser.add_argument('--preset', type=str, default=None,
-                       choices=['fast', 'high_accuracy', 'production'],
-                       help='Предустановленная конфигурация')
-    
-    args = parser.parse_args()
-    
-    # Загрузка конфигурации
-    if args.config:
-        config = ProjectConfig.load_config(args.config)
-        print(f"Загружена конфигурация из файла: {args.config}")
-    elif args.preset:
-        if args.preset == 'fast':
-            config = get_fast_config()
-        elif args.preset == 'high_accuracy':
-            config = get_high_accuracy_config()
-        elif args.preset == 'production':
-            config = get_production_config()
-        print(f"Используется предустановленная конфигурация: {args.preset}")
-    else:
-        config = ProjectConfig()
-        print("Используется конфигурация по умолчанию")
+    # Использование конфигурации по умолчанию
+    config = ProjectConfig()
+    print("Используется конфигурация из config.py")
     
     # Создание необходимых директорий
     config.create_directories()
@@ -366,9 +352,6 @@ def main():
         shuffle=True,
         val_split=config.data.val_split
     )
-    
-    # Сохранение конфигурации
-    config.save_config(os.path.join(config.training.checkpoint_dir, 'config.json'))
     
     # Создание тренера и запуск обучения
     trainer = FaceRecognitionTrainer(config)
